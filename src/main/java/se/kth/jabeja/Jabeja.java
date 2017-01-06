@@ -1,5 +1,6 @@
 package se.kth.jabeja;
 
+import jdk.nashorn.internal.runtime.FindProperty;
 import org.apache.log4j.Logger;
 import se.kth.jabeja.config.Config;
 import se.kth.jabeja.config.NodeSelectionPolicy;
@@ -61,33 +62,77 @@ public class Jabeja {
    * @param nodeId
    */
   private void sampleAndSwap(int nodeId) {
-    Node partner = null;
     Node nodep = entireGraph.get(nodeId);
+    Node partner = null;
 
     if (config.getNodeSelectionPolicy() == NodeSelectionPolicy.HYBRID
             || config.getNodeSelectionPolicy() == NodeSelectionPolicy.LOCAL) {
+      partner = findPartner(nodeId, nodep.getNeighbours().toArray(new Integer[0]));
       // swap with random neighbors
-      // TODO
     }
 
     if (config.getNodeSelectionPolicy() == NodeSelectionPolicy.HYBRID
             || config.getNodeSelectionPolicy() == NodeSelectionPolicy.RANDOM) {
       // if local policy fails then randomly sample the entire graph
-      // TODO
+      if(partner == null){
+        findPartner(nodeId, getSample(nodeId));
+      }
     }
 
-    // swap the colors
-    // TODO
+    if(partner != null){
+      swapColors(nodep, partner);
+    }
+
+    T -= config.getDelta();
+    if(T < 1){
+      T = 1;
+    }
+      }
+
+  public void swapColors(Node n1, Node n2){
+    int old = n1.getColor();
+      numberOfSwaps += 1;
+    n1.setColor(n2.getColor());
+    n2.setColor(old);
   }
 
-  public Node findPartner(int nodeId, Integer[] nodes){
+  public Node findPartner(int p, Integer[] nodes){
 
-    Node nodep = entireGraph.get(nodeId);
 
     Node bestPartner = null;
     double highestBenefit = 0;
 
-    // TODO
+
+      HashMap<Integer, HashMap<Integer,Integer>> d = new HashMap<Integer, HashMap<Integer, Integer>>();
+
+
+    Node n = entireGraph.get(p);
+
+    Integer old = 0;
+    Integer newV = 0;
+
+      int nlen = nodes.length;
+
+      for(int q : nodes){
+          Node qNode = entireGraph.get(q);
+          if(!d.containsKey(p)){
+              d.put(p, new HashMap<Integer, Integer>());
+          }
+          if(!d.containsKey(q)){
+              d.put(q, new HashMap<Integer, Integer>());
+          }
+
+          d.get(p).put(p, getDegree(n, n.getColor()));
+          d.get(q).put(q, getDegree(qNode, qNode.getColor()));
+          old = d.get(p).get(p) + d.get(q).get(q);
+          d.get(p).put(q, getDegree(n, qNode.getColor()));
+          d.get(q).put(p, getDegree(qNode, n.getColor()));
+          newV = d.get(p).get(q) + d.get(q).get(p);
+          if(newV * T > old && newV > highestBenefit){
+              bestPartner = qNode;
+              highestBenefit = newV;
+          }
+      }
 
     return bestPartner;
   }
