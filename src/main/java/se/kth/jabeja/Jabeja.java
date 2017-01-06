@@ -89,11 +89,28 @@ public class Jabeja {
     }
       }
 
+  private int dp(Node n){
+    int sameColors = 0;
+    for(Integer id : n.getNeighbours()){
+      Node s = entireGraph.get(id);
+      if(s.getColor() == n.getColor()){
+        sameColors++;
+      }
+    }
+    return sameColors;
+  }
+
   public void swapColors(Node n1, Node n2){
-    int old = n1.getColor();
+    int v1 = dp(n1);
+    int v2 = dp(n2);
+    float a = config.getAlpha();
+    double c = (Math.pow(v1, a)+Math.pow(v2,a));
+    if(c*T > c){
+      int old = n1.getColor();
+      n1.setColor(n2.getColor());
+      n2.setColor(old);
       numberOfSwaps += 1;
-    n1.setColor(n2.getColor());
-    n2.setColor(old);
+    }
   }
 
   public Node findPartner(int p, Integer[] nodes){
