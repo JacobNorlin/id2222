@@ -16,6 +16,13 @@ public class Node {
 		this.neighbours = new ArrayList<Integer>();
 	}
 
+	public Node(Node n){
+		this.id = n.getId();
+		this.color = n.getColor();
+		this.initColor = n.getInitColor();
+		this.neighbours = n.getNeighbours();
+	}
+
 	public void setColor(int color) {
 		this.color = color;
 	}

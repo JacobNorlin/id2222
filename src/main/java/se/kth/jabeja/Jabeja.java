@@ -14,11 +14,12 @@ import java.util.*;
 public class Jabeja {
     final static Logger logger = Logger.getLogger(Jabeja.class);
     private final Config config;
-    private final HashMap<Integer/*id*/, Node/*neighbors*/> entireGraph;
+    private HashMap<Integer/*id*/, Node/*neighbors*/> entireGraph;
     private final List<Integer> nodeIds;
     private int numberOfSwaps;
     private int round;
     private float T;
+    private float Tr;
     private boolean resultFileCreated = false;
 
     //-------------------------------------------------------------------
@@ -29,33 +30,85 @@ public class Jabeja {
         this.numberOfSwaps = 0;
         this.config = config;
         this.T = config.getTemperature();
+        this.Tr = T;
     }
 
+
+
+    private HashMap<Integer, Node> copyGraph(HashMap<Integer, Node> G){
+        HashMap<Integer, Node> copy = new HashMap<Integer, Node>();
+        for(Integer i : G.keySet()){
+            Node n = new Node(G.get(i));
+            copy.put(n.getId(), n);
+        }
+        return copy;
+    }
 
     //-------------------------------------------------------------------
     public void startJabeja() throws IOException {
         for (round = 0; round < config.getRounds(); round++) {
+            HashMap<Integer, Node> oldGraph = copyGraph(entireGraph);
+            //float oldCost = E(nodeIds);
             for (int id : entireGraph.keySet()) {
                 sampleAndSwap(id);
             }
 
             //one cycle for all nodes have completed.
             //reduce the temperature
-            saCoolDown();
+            saCoolDown(oldGraph);
+            Tr = T;
             report();
         }
+    }
+
+    private boolean maybeMove(float oldCost, float newCost, float T){
+        float r = new Random().nextFloat();
+        double p = Math.pow(Math.E, (oldCost-newCost)/T);
+        return r < p;
     }
 
     /**
      * Simulated analealing cooling function
      */
-    private void saCoolDown() {
+    private void saCoolDown(HashMap<Integer, Node> oldGraph) {
         // TODO for second task
-        if (T > 1)
-            T -= config.getDelta();
-        if (T < 1)
+        float newCost = E(entireGraph);
+        float oldCost = E(oldGraph);
+        System.out.println(oldCost +", "+ newCost +" "+(oldGraph == entireGraph));
+        if (!(newCost < oldCost || (newCost >= oldCost && maybeMove(oldCost, newCost, T))))
+        {
+            System.out.println("rejecting");
+            entireGraph = new HashMap<Integer, Node>(oldGraph);
+        }
+        if(T > 1){
+            T *= 0.95;
+        }
+        if (T < 1) {
             T = 1;
+        }
     }
+
+    private float E(HashMap<Integer, Node> G){
+        int sum = 0;
+        for (int i : G.keySet()) {
+            Node node = G.get(i);
+            int nodeColor = node.getColor();
+            ArrayList<Integer> nodeNeighbours = node.getNeighbours();
+
+
+            if (nodeNeighbours != null) {
+                for (int n : nodeNeighbours) {
+                    Node p = G.get(n);
+                    int pColor = p.getColor();
+
+                    if (nodeColor != pColor)
+                        sum++;
+                }
+            }
+        }
+        return sum/2;
+    }
+
 
     /**
      * Sample and swap algorith at node p
@@ -63,35 +116,36 @@ public class Jabeja {
      * @param nodeId
      */
     private void sampleAndSwap(int nodeId) {
-        Node nodep = entireGraph.get(nodeId);
-        Node partner = null;
+        Node p = entireGraph.get(nodeId);
+        Node q = null;
 
         if (config.getNodeSelectionPolicy() == NodeSelectionPolicy.HYBRID
                 || config.getNodeSelectionPolicy() == NodeSelectionPolicy.LOCAL) {
-            partner = findPartner(nodeId, nodep.getNeighbours().stream().toArray(Integer[]::new));
+            q = findPartner(nodeId, p.getNeighbours().stream().toArray(Integer[]::new));
             // swap with random neighbors
         }
 
         if (config.getNodeSelectionPolicy() == NodeSelectionPolicy.HYBRID
                 || config.getNodeSelectionPolicy() == NodeSelectionPolicy.RANDOM) {
             // if local policy fails then randomly sample the entire graph
-            if (partner == null) {
-                partner = findPartner(nodeId, getSample(nodeId));
+            if (q == null) {
+                q = findPartner(nodeId, getSample(nodeId));
             }
         }
 
-        if (partner != null) {
-            swapColors(nodep, partner);
+        if (q != null) {
+            if(swapColors(p, q) == true){
+            }
         }
 
-        T -= config.getDelta();
-        if (T < 1) {
-            T = 1;
+        Tr -= config.getDelta();
+        if (Tr < 1) {
+            Tr = 1;
         }
     }
 
 
-    public void swapColors(Node p, Node q) {
+    public boolean swapColors(Node p, Node q) {
         int dpq = getDegree(p, q.getColor());
         int dpp = getDegree(p, p.getColor());
         int dqp = getDegree(q, p.getColor());
@@ -99,12 +153,14 @@ public class Jabeja {
         float a = config.getAlpha();
         double c1 = (Math.pow(dpq, a) + Math.pow(dqp, a));
         double c2 = (Math.pow(dpp, a) + Math.pow(dqq, a));
-        if (c1 * T > c2) {
+        if (c1 * Tr > c2) {
             int old = p.getColor();
             p.setColor(q.getColor());
             q.setColor(old);
             numberOfSwaps += 1;
+            return true;
         }
+        return false;
     }
 
     public Node findPartner(int p, Integer[] nodes) {
@@ -130,7 +186,7 @@ public class Jabeja {
             int dqp = getDegree(qNode, pNode.getColor());
             newV = Math.pow(dpq, a) + Math.pow(dqp, a);
 
-            if (newV * T > old && newV > highestBenefit) {
+            if (newV * Tr > old && newV > highestBenefit) {
                 bestPartner = qNode;
                 highestBenefit = newV;
             }
