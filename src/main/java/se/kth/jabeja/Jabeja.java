@@ -89,11 +89,11 @@ public class Jabeja {
     }
       }
 
-  private int dp(Node n){
+  private int countColors(Node n, int color){
     int sameColors = 0;
     for(Integer id : n.getNeighbours()){
       Node s = entireGraph.get(id);
-      if(s.getColor() == n.getColor()){
+      if(s.getColor() == color){
         sameColors++;
       }
     }
@@ -101,11 +101,14 @@ public class Jabeja {
   }
 
   public void swapColors(Node n1, Node n2){
-    int v1 = dp(n1);
-    int v2 = dp(n2);
+    int dpq = countColors(n1, n1.getColor());
+    int dpp = countColors(n2, n1.getColor());
+    int dqp = countColors(n1, n2.getColor());
+    int dqq = countColors(n2, n2.getColor());
     float a = config.getAlpha();
-    double c = (Math.pow(v1, a)+Math.pow(v2,a));
-    if(c*T > c){
+    double c1 = (Math.pow(dpq, a)+Math.pow(dqp,a));
+    double c2 = (Math.pow(dpp, a)+Math.pow(dqq,a));
+    if(c1*T > c2){
       int old = n1.getColor();
       n1.setColor(n2.getColor());
       n2.setColor(old);
