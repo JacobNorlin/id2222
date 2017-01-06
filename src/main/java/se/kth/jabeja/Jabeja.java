@@ -65,9 +65,16 @@ public class Jabeja {
     Node nodep = entireGraph.get(nodeId);
     Node partner = null;
 
+    partner = findPartner(nodeId, nodep.getNeighbours().toArray(new Integer[0]));
+
     if (config.getNodeSelectionPolicy() == NodeSelectionPolicy.HYBRID
             || config.getNodeSelectionPolicy() == NodeSelectionPolicy.LOCAL) {
-      partner = findPartner(nodeId, nodep.getNeighbours().toArray(new Integer[0]));
+      if(partner == null){
+        findPartner(nodeId, getSample(nodeId));
+      }
+      if(partner != null){
+        swapColors(nodep, partner);
+      }
       // swap with random neighbors
     }
 
@@ -77,11 +84,12 @@ public class Jabeja {
       if(partner == null){
         findPartner(nodeId, getSample(nodeId));
       }
+      if(partner != null){
+        swapColors(nodep, partner);
+      }
+
     }
 
-    if(partner != null){
-      swapColors(nodep, partner);
-    }
 
     T -= config.getDelta();
     if(T < 1){
