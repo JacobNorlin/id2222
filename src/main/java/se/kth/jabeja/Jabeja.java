@@ -101,9 +101,9 @@ public class Jabeja {
   }
 
   public void swapColors(Node n1, Node n2){
-    int dpq = countColors(n1, n1.getColor());
-    int dpp = countColors(n2, n1.getColor());
-    int dqp = countColors(n1, n2.getColor());
+    int dpq = countColors(n1, n2.getColor());
+    int dpp = countColors(n1, n1.getColor());
+    int dqp = countColors(n2, n1.getColor());
     int dqq = countColors(n2, n2.getColor());
     float a = config.getAlpha();
     double c1 = (Math.pow(dpq, a)+Math.pow(dqp,a));
